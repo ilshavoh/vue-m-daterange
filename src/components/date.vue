@@ -124,12 +124,27 @@ export default {
 
 				case "start":
 					this.render[index].status = "";
+
+					if(this.selected.endIndex !== -1){
+						this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
+
+						this.render[this.selected.endIndex].status = this.status.start;
+						this.selected.startIndex = this.selected.endIndex;
+						this.selected.endIndex = -1;
+
+						return;
+					}
+
 					this.selected.startIndex = -1;
+
 					break;
 
 				case "end":
+					this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
+
 					this.render[index].status = "";
 					this.selected.endIndex = -1;
+
 					break;
 
 				default:
@@ -137,8 +152,14 @@ export default {
 						this.selected.startIndex = index;
 						this.render[index].status = this.status.start;
 					}else if(this.selected.endIndex === -1){
-						if(index <= this.selected.startIndex){
-							return false;
+						if(index < this.selected.startIndex){
+							this.selected.endIndex = this.selected.startIndex;
+							this.selected.startIndex = index;
+
+							this.render[this.selected.startIndex].status = this.status.start;
+							this.render[this.selected.endIndex].status = this.status.end;
+
+							return;
 						}
 
 						this.selected.endIndex = index;
@@ -147,9 +168,7 @@ export default {
 						this.render[this.selected.startIndex].status = "";
 						this.render[this.selected.endIndex].status = "";
 
-						for(let i = this.selected.startIndex + 1; i < this.selected.endIndex; i++){
-							this.render[i].status = "";
-						}
+						this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
 
 						this.selected.startIndex = index;
 						this.selected.endIndex = -1;
@@ -167,6 +186,16 @@ export default {
 		},
 		close () {
 			this.show = false;
+		},
+		setContinuous (start, end){
+			for(let i = start + 1; i < end; i++){
+				this.render[i].status = this.status.continuous;
+			}
+		},
+		clearContinuous (start, end){
+			for(let i = start + 1; i < end; i++){
+				this.render[i].status = "";
+			}
 		}
 	},
 	mounted() {
@@ -179,10 +208,8 @@ export default {
 			let start = val.startIndex;
 			let end = val.endIndex;
 
-			if(start !== -1 && end !== -1){
-				for(let i = start + 1; i < end; i++){
-					this.render[i].status = this.status.continuous;
-				}
+			if(start !== -1 && end !== -1 && start !== end){
+				this.setContinuous(start, end);
 			}
 		}, {
 			deep: true

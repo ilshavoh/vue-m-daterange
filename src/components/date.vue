@@ -1,5 +1,5 @@
 <template>
-	<div class="date">
+	<div class="date" v-if="show">
 		<div class="date-head">
 			<svg @click="close" class="date-head-cancel" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="transform-group"><g transform="scale(0.015625, 0.015625)"><path d="M671.968 912c-12.288 0-24.576-4.672-33.952-14.048L286.048 545.984c-18.752-18.72-18.752-49.12 0-67.872l351.968-352c18.752-18.752 49.12-18.752 67.872 0 18.752 18.72 18.752 49.12 0 67.872l-318.016 318.048 318.016 318.016c18.752 18.752 18.752 49.12 0 67.872C696.544 907.328 684.256 912 671.968 912z" fill="#fff"></path></g></g></svg>
 			<p @click="submit" class="date-head-ok">确定</p>
@@ -17,10 +17,10 @@
 
 			<div class="date-calendar-body">
 				<p @click="addLastMonth">上一月</p>
-				<div v-for="(item, index) in render">
+				<div v-for="(item, i1) in render">
 					<p class="name">{{ item.name }}</p>
 					<div class="data">
-						<p v-for="(item, index) in item.data" :class="[ item.status ]" @click="click(item, index)">{{ item.date }}</p>
+						<p v-for="(item, i2) in item.data" :class="[ item.status ]" @click="click(item, i1, i2)">{{ item.date }}</p>
 					</div>
 				</div>
 				<p @click="addNextMonth">下一月</p>
@@ -49,9 +49,11 @@ export default {
 			},
 
 			selected: {
-				startIndex: -1,
-				endIndex: -1
+				startIndex: [-1, -1],
+				endIndex: [-1, -1]
 			},
+
+			show: true
 
 		}
 	},
@@ -59,10 +61,6 @@ export default {
 
 	},
 	props: {
-		show: {
-			type: Boolean,
-			default: false
-		},
 		start: {
 			type: String
 		},
@@ -125,7 +123,7 @@ export default {
 				render.push({
 					date: i,
 					dateObj: new Date(y, m, i),
-					status: ""
+					status: this.status.normal
 				});
 			}
 
@@ -135,7 +133,8 @@ export default {
 				let lastDateOfLastMonth = lastDateObjOfLastMonth.getDate();
 				for(let i = 0; i <= lastDayOfLastMonth; i++){
 					render.unshift({
-						date: lastDateOfLastMonth - i,
+						// date: lastDateOfLastMonth - i,
+						date: "",
 						dateObj: "",
 						status: this.status.disable
 					});
@@ -146,7 +145,8 @@ export default {
 			if(lastDayOfMonth !== 6){
 				for(let i = lastDayOfMonth, j = 1; i < 6; i++, j++){
 					render.push({
-						date: j,
+						// date: j,
+						date: "",
 						dateObj: "",
 						status: this.status.disable
 					});
@@ -154,6 +154,8 @@ export default {
 			}
 
 			return {
+				y,
+				m,
 				name: y + " - " + zero(m + 1),
 				data: render
 			};
@@ -168,70 +170,71 @@ export default {
 			}
 		},
 
-		click (item, index) {
+		click (item, i1, i2) {
 			switch (item.status) {
-				case "disable":
+				case this.status.disabled:
 					return false;
 
-				case "start":
-					this.render[index].status = "";
+				case this.status.start:
+					this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
 
-					if(this.selected.endIndex !== -1){
-						this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
-
-						this.render[this.selected.endIndex].status = this.status.start;
-						this.selected.startIndex = this.selected.endIndex;
-						this.selected.endIndex = -1;
+					if(this.selected.endIndex[0] !== -1 && this.selected.endIndex[1] !== -1){
+						this.setStart(...this.selected.endIndex);
+						this.clearEnd(...this.selected.endIndex);
 
 						return;
 					}
-
-					this.selected.startIndex = -1;
-
 					break;
 
-				case "end":
+				case this.status.end:
 					this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
 
-					this.render[index].status = "";
-					this.selected.endIndex = -1;
+					this.clearEnd(i1, i2);
 
 					break;
 
 				default:
-					if(this.selected.startIndex === -1){
-						this.selected.startIndex = index;
-						this.render[index].status = this.status.start;
-					}else if(this.selected.endIndex === -1){
-						if(index < this.selected.startIndex){
-							this.selected.endIndex = this.selected.startIndex;
-							this.selected.startIndex = index;
-
-							this.render[this.selected.startIndex].status = this.status.start;
-							this.render[this.selected.endIndex].status = this.status.end;
+					if(this.selected.startIndex[0] === -1 && this.selected.startIndex[1] === -1){
+						this.setStart(i1, i2);
+					}else if(this.selected.endIndex[0] === -1 && this.selected.endIndex[1] === -1){
+						if(i1 <= this.selected.startIndex[0] && i2 <= this.selected.startIndex[1]){
+							this.setEnd(...this.selected.startIndex);
+							this.setStart(i1, i2);
 
 							return;
 						}
 
-						this.selected.endIndex = index;
-						this.render[index].status = this.status.end;
+						this.setEnd(i1, i2);
 					}else{
-						this.render[this.selected.startIndex].status = "";
-						this.render[this.selected.endIndex].status = "";
-
 						this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
 
-						this.selected.startIndex = index;
-						this.selected.endIndex = -1;
-						this.render[index].status = this.status.start;
+						this.clearEnd(...this.selected.endIndex);
+						this.clearStart(...this.selected.startIndex);
+						this.setStart(i1, i2);
 					}
 			}
+		},
+		setStart (i1, i2) {
+			this.selected.startIndex = [i1, i2];
+			this.render[i1].data[i2].status = this.status.start;
+		},
+		clearStart (i1, i2) {
+			this.selected.startIndex = [-1, -1];
+			this.render[i1].data[i2].status = this.status.normal;
+		},
+		setEnd (i1, i2) {
+			this.selected.endIndex = [i1, i2];
+			this.render[i1].data[i2].status = this.status.end;
+		},
+		clearEnd (i1, i2) {
+			this.selected.endIndex = [-1, -1];
+			this.render[i1].data[i2].status = this.status.normal;
 		},
 
 		submit () {
 			this.$emit("daterange", {
-				start: this.render[this.selected.startIndex].dateObj,
-				end: this.render[this.selected.endIndex].dateObj
+				start: this.render[this.selected.startIndex[0]].data[this.selected.startIndex[1]].dateObj,
+				end: this.render[this.selected.endIndex[0]].data[this.selected.endIndex[1]].dateObj
 			});
 
 			this.close();
@@ -241,13 +244,73 @@ export default {
 		},
 
 		setContinuous (start, end){
-			for(let i = start + 1; i < end; i++){
-				this.render[i].status = this.status.continuous;
+			// it will cover the item which has "disabled" status
+			let item = {};
+			if(start[0] === end[0]){
+				for(let i = start[1] + 1; i < end[1]; i++){
+					item = this.render[start[0]].data[i];
+					if(item.status !== this.status.disable){
+						item.status = this.status.continuous;
+					}
+				}
+			}else if(end[0] > start[0]){
+				for(let i = start[1] + 1; i < this.render[start[0]].data.length; i++){
+					item = this.render[start[0]].data[i];
+					if(item.status !== this.status.disable){
+						item.status = this.status.continuous;
+					}
+				}
+
+				for(let i = start[0] + 1; i < end[0]; i++){
+					for(let j = 0; j < this.render[i].data.length; j++){
+						item = this.render[i].data[j];
+						if(item.status !== this.status.disable){
+							item.status = this.status.continuous;
+						}
+					}
+				}
+
+				for(let i = 0; i < end[1]; i++){
+					item = this.render[end[0]].data[i];
+					if(item.status !== this.status.disable){
+						item.status = this.status.continuous;
+					}
+				}
 			}
 		},
 		clearContinuous (start, end){
-			for(let i = start + 1; i < end; i++){
-				this.render[i].status = "";
+			// it will cover the item which has "disabled" status
+			let item = {};
+			if(start[0] === end[0]){
+				for(let i = start[1] + 1; i < end[1]; i++){
+					item = this.render[start[0]].data[i];
+					if(item.status !== this.status.disable){
+						item.status = this.status.normal;
+					}
+				}
+			}else if(end[0] > start[0]){
+				for(let i = start[1] + 1; i < this.render[start[0]].data.length; i++){
+					item = this.render[start[0]].data[i];
+					if(item.status !== this.status.disable){
+						item.status = this.status.normal;
+					}
+				}
+
+				for(let i = start[0] + 1; i < end[0]; i++){
+					for(let j = 0; j < this.render[i].data.length; j++){
+						item = this.render[i].data[j];
+						if(item.status !== this.status.disable){
+							item.status = this.status.normal;
+						}
+					}
+				}
+
+				for(let i = 0; i < end[1]; i++){
+					item = this.render[end[0]].data[i];
+					if(item.status !== this.status.disable){
+						item.status = this.status.normal;
+					}
+				}
 			}
 		},
 
@@ -293,7 +356,11 @@ export default {
 			let start = val.startIndex;
 			let end = val.endIndex;
 
-			if(start !== -1 && end !== -1 && start !== end){
+			if(start[0] !== -1
+				&& start[1] !== -1
+				&& end[0] !== -1
+				&& end[1] !== -1
+			){
 				this.setContinuous(start, end);
 			}
 		}, {

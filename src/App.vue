@@ -1,6 +1,7 @@
 <template>
 <div id="app">
-	<date @daterange="daterange" :show="true" start="2017-03-03" end="2017-04-04"></date>
+	<date @daterange="daterange" start="2017-02-03" end="2017-04-04"></date>
+	<p>{{ startString }} ~ {{ endString }}</p>
 </div>
 </template>
 
@@ -9,12 +10,29 @@ import date from './components/date'
 
 export default {
 	name: 'app',
+	data () {
+		return {
+			dateShow: true,
+			selected: {
+				start: new Date(),
+				end: new Date()
+			}
+		}
+	},
+	computed: {
+		startString () {
+			return this.selected.start.toLocaleDateString();
+		},
+		endString () {
+			return this.selected.end.toLocaleDateString();
+		}
+	},
 	components: {
 		date
 	},
 	methods: {
 		daterange (o) {
-			console.dir(o);
+			this.selected = o;
 		}
 	}
 }

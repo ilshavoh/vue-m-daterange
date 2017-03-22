@@ -172,7 +172,7 @@ export default {
 
 		click (item, i1, i2) {
 			switch (item.status) {
-				case this.status.disabled:
+				case this.status.disable:
 					return false;
 
 				case this.status.start:

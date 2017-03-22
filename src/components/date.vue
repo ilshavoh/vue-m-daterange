@@ -1,5 +1,5 @@
 <template>
-	<div class="date" v-show="show">
+	<div class="date">
 		<div class="date-head">
 			<svg @click="close" class="date-head-cancel" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="transform-group"><g transform="scale(0.015625, 0.015625)"><path d="M671.968 912c-12.288 0-24.576-4.672-33.952-14.048L286.048 545.984c-18.752-18.72-18.752-49.12 0-67.872l351.968-352c18.752-18.752 49.12-18.752 67.872 0 18.752 18.72 18.752 49.12 0 67.872l-318.016 318.048 318.016 318.016c18.752 18.752 18.752 49.12 0 67.872C696.544 907.328 684.256 912 671.968 912z" fill="#fff"></path></g></g></svg>
 			<p @click="submit" class="date-head-ok">确定</p>
@@ -14,9 +14,18 @@
 				<p>五</p>
 				<p>六</p>
 			</div>
+
 			<div class="date-calendar-body">
-				<p v-for="(item, index) in render" :class="[ item.status ]" @click="click(item, index)">{{ item.date }}</p>
+				<p @click="addLastYear">上一年</p>
+				<div v-for="(item, index) in render">
+					<p class="name">{{ item.name }}</p>
+					<div class="data">
+						<p v-for="(item, index) in item.data" :class="[ item.status ]" @click="click(item, index)">{{ item.date }}</p>
+					</div>
+				</div>
+				<p @click="addNextYear">下一年</p>
 			</div>
+
 		</div>
 	</div>
 </template>
@@ -28,16 +37,11 @@ export default {
 	data() {
 		return {
 
-			// render: [
-			// 	{
-			// 		date: 18,
-			// 		dateObj: "new Date(2017, 03, 18)",
-			// 		status: "start"
-			// 	}
-			// ]
 			render: [],
+			years: [],
 
 			status: {
+				normal: "normal",
 				start: "start",
 				end: "end",
 				continuous: "continuous",
@@ -47,8 +51,12 @@ export default {
 			selected: {
 				startIndex: -1,
 				endIndex: -1
-			}
+			},
+
 		}
+	},
+	computed: {
+
 	},
 	props: {
 		show: {
@@ -62,24 +70,42 @@ export default {
 			type: String
 		}
 	},
-	methods: {
-		initYearMonth (y, m) {
-			let a = [];
-			if( typeof y !== "number" ||
-				typeof m !== "number" ||
-				y < 0 ||
-				m < 0 ||
-				m > 11 ){
+	components: {
 
-				let now = new Date();
-				a = [now.getFullYear(), now.getMonth()];
+	},
+
+	methods: {
+		parsePropStartEnd () {
+			let start = parse(this.start);
+			let end = parse(this.end);
+
+			if(start[0] >= end[0]){
+				this.years.push(start[0]);
 			}else{
-				a = [y, m];
+				for(let i = start[0]; i <= end[0]; i++){
+					this.years.push(i);
+				}
 			}
 
-			return a;
+			function parse (val) {
+				let sep = "";
+
+				if (val) {
+					if (val.indexOf("-") !== -1) sep = "-";
+					if (val.indexOf(".") !== -1) sep = ".";
+					if (val.indexOf("/") !== -1) sep = "/";
+
+					let split = val.split(sep);
+
+					return [parseInt(split[0]), parseInt(split[1]) - 1, parseInt(split[2])];
+				}else{
+					let now = new Date();
+					return [now.getFullYear(), now.getMonth(), now.getDate()];
+				}
+			}
 		},
-		getRenderArr (y, m) {
+
+		getRenderMonth (y, m) {
 			let render = [];
 
 			let lastDateOfMonth = new Date(y, m + 1, 0).getDate();
@@ -117,6 +143,28 @@ export default {
 
 			return render;
 		},
+		getRenderYear (y) {
+			let render = [];
+
+			for (let i = 0; i < 12; i++){
+				render.push({
+					name: y + " - " + zero(i + 1),
+					data: this.getRenderMonth(y, i)
+				});
+			}
+
+			function zero(n){
+				return n < 10 ? '0' + n : n;
+			}
+
+			return render;
+		},
+		initRender () {
+			for(let i = 0; i < this.years.length; i++){
+				this.render.push(...this.getRenderYear(this.years[i]));
+			}
+		},
+
 		click (item, index) {
 			switch (item.status) {
 				case "disable":
@@ -176,6 +224,7 @@ export default {
 					}
 			}
 		},
+
 		submit () {
 			this.$emit("daterange", {
 				start: this.render[this.selected.startIndex].dateObj,
@@ -187,6 +236,7 @@ export default {
 		close () {
 			this.show = false;
 		},
+
 		setContinuous (start, end){
 			for(let i = start + 1; i < end; i++){
 				this.render[i].status = this.status.continuous;
@@ -196,12 +246,26 @@ export default {
 			for(let i = start + 1; i < end; i++){
 				this.render[i].status = "";
 			}
+		},
+
+		addLastYear () {
+			let n = this.years[0] - 1;
+
+			this.years.unshift(n);
+			this.render.unshift(...this.getRenderYear(n));
+		},
+		addNextYear () {
+			let n = this.years[this.years.length - 1] + 1;
+
+			this.years.unshift(n);
+			this.render.push(...this.getRenderYear(n));
 		}
 	},
-	mounted() {
 
-		// render calendar
-		this.render = this.getRenderArr(...this.initYearMonth());
+	mounted() {
+		this.parsePropStartEnd();
+
+		this.initRender();
 
 		// deep watch
 		this.$watch("selected", function(val){
@@ -230,8 +294,14 @@ export default {
 	width: 100%;
 
 	background-color: #f6f6f6;
+	overflow-y: auto;
 
 	&-head{
+		position: fixed;
+		top: 0;
+		left: 0;
+
+		width: 100%;
 		height: 5rem;
 
 		padding: 1rem 1.7rem 1rem 1rem;
@@ -259,10 +329,16 @@ export default {
 	&-calendar{
 
 		&-head{
+			position: fixed;
+			top: 5rem;
+			left: 0;
+
 			display: flex;
 			justify-content: space-around;
 
+			width: 100%;
 			height: 5rem;
+
 			padding: 1rem 0;
 
 			font-size: 2rem;
@@ -279,47 +355,55 @@ export default {
 		}
 
 		&-body{
-			display: flex;
-			justify-content: space-around;
-			flex-wrap: wrap;
+			margin: 10rem 0 2rem;
 
-			padding-top: 3%;
+			.name{
+				margin: 3rem 0 0 3%;
 
-			font-size: 2rem;
-			color: #333;
-			text-align: center;
-			line-height: 14vw;
+				color: #666;
+			}
 
-			box-sizing: border-box;
+			.data{
+				display: flex;
+				justify-content: space-around;
+				flex-wrap: wrap;
 
-			p{
-				width: 14vw;
-				height: 14vw;
+				font-size: 2rem;
+				color: #333;
+				text-align: center;
+				line-height: 14vw;
 
-				margin: 1.5% 0;
+				box-sizing: border-box;
 
-				&.start{
-					color: #fff;
-					background-color: #39f;
+				p{
+					width: 14vw;
+					height: 14vw;
 
-					border-radius: 50%;
-				}
+					margin: 0 0 1.5% 0;
 
-				&.end{
-					color: #fff;
-					background-color: #fa3;
+					&.start{
+						color: #fff;
+						background-color: #39f;
 
-					border-radius: 50%;
-				}
+						border-radius: 50%;
+					}
 
-				&.continuous{
-					background-color: #bbb;
+					&.end{
+						color: #fff;
+						background-color: #fa3;
 
-					border-radius: 50%;
-				}
+						border-radius: 50%;
+					}
 
-				&.disable{
-					color: #bbb
+					&.continuous{
+						background-color: #bbb;
+
+						border-radius: 50%;
+					}
+
+					&.disable{
+						color: #f6f6f6;
+					}
 				}
 			}
 		}

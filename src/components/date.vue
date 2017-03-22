@@ -16,14 +16,14 @@
 			</div>
 
 			<div class="date-calendar-body">
-				<p @click="addLastYear">上一年</p>
+				<p @click="addLastMonth">上一月</p>
 				<div v-for="(item, index) in render">
 					<p class="name">{{ item.name }}</p>
 					<div class="data">
 						<p v-for="(item, index) in item.data" :class="[ item.status ]" @click="click(item, index)">{{ item.date }}</p>
 					</div>
 				</div>
-				<p @click="addNextYear">下一年</p>
+				<p @click="addNextMonth">下一月</p>
 			</div>
 
 		</div>
@@ -38,7 +38,7 @@ export default {
 		return {
 
 			render: [],
-			years: [],
+			months: [],
 
 			status: {
 				normal: "normal",
@@ -79,11 +79,23 @@ export default {
 			let start = parse(this.start);
 			let end = parse(this.end);
 
-			if(start[0] >= end[0]){
-				this.years.push(start[0]);
+			if(start[0] > end[0]){
+				this.months.push([start[0], start[1]]);
+			}else if(start[0] === end[0]){
+				for(let i = start[1]; i <= end[1]; i++){
+					this.months.push([start[0], i]);
+				}
 			}else{
-				for(let i = start[0]; i <= end[0]; i++){
-					this.years.push(i);
+				for(let i = start[1]; i < 12; i++){
+					this.months.push([start[0], i]);
+				}
+				for(let i = start[0] + 1; i < end[0]; i++){
+					for(let j = 0; j < 12; j++){
+						this.months.push([i, j]);
+					}
+				}
+				for(let i = 0; i < end[1]; i++){
+					this.months.push([end[0], i]);
 				}
 			}
 
@@ -141,27 +153,18 @@ export default {
 				}
 			}
 
-			return render;
-		},
-		getRenderYear (y) {
-			let render = [];
+			return {
+				name: y + " - " + zero(m + 1),
+				data: render
+			};
 
-			for (let i = 0; i < 12; i++){
-				render.push({
-					name: y + " - " + zero(i + 1),
-					data: this.getRenderMonth(y, i)
-				});
-			}
-
-			function zero(n){
-				return n < 10 ? '0' + n : n;
-			}
-
-			return render;
+			function zero(n) {
+	            return n < 10 ? '0' + n : n
+	        }
 		},
 		initRender () {
-			for(let i = 0; i < this.years.length; i++){
-				this.render.push(...this.getRenderYear(this.years[i]));
+			for(let i = 0; i < this.months.length; i++){
+				this.render.push(this.getRenderMonth(...this.months[i]));
 			}
 		},
 
@@ -248,17 +251,35 @@ export default {
 			}
 		},
 
-		addLastYear () {
-			let n = this.years[0] - 1;
+		addLastMonth () {
+			let y = this.months[0][0];
+			let m = this.months[0][1];
 
-			this.years.unshift(n);
-			this.render.unshift(...this.getRenderYear(n));
+			let a = [];
+
+			if(m === 0){
+				a = [y - 1, 11];
+			}else{
+				a = [y, m-1];
+			}
+
+			this.months.unshift(a);
+			this.render.unshift(this.getRenderMonth(...a));
 		},
-		addNextYear () {
-			let n = this.years[this.years.length - 1] + 1;
+		addNextMonth () {
+			let y = this.months[this.months.length - 1][0];
+			let m = this.months[this.months.length - 1][1];
 
-			this.years.unshift(n);
-			this.render.push(...this.getRenderYear(n));
+			let a = [];
+
+			if(m === 11){
+				a = [y + 1, 0];
+			}else{
+				a = [y, m + 1];
+			}
+
+			this.months.push(a);
+			this.render.push(this.getRenderMonth(...a));
 		}
 	},
 

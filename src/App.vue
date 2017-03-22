@@ -1,6 +1,6 @@
 <template>
 <div id="app">
-	<date @daterange="daterange" :show="true" start="2015-03-03" end="2017-04-04"></date>
+	<date @daterange="daterange" :show="true" start="2017-03-03" end="2017-04-04"></date>
 </div>
 </template>
 

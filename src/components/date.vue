@@ -179,8 +179,11 @@ export default {
 					this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
 
 					if(this.selected.endIndex[0] !== -1 && this.selected.endIndex[1] !== -1){
-						this.setStart(...this.selected.endIndex);
+						let temp = this.selected.endIndex;
+
+						this.clearStart(...this.selected.startIndex);
 						this.clearEnd(...this.selected.endIndex);
+						this.setStart(...temp);
 
 						return;
 					}
@@ -197,14 +200,17 @@ export default {
 					if(this.selected.startIndex[0] === -1 && this.selected.startIndex[1] === -1){
 						this.setStart(i1, i2);
 					}else if(this.selected.endIndex[0] === -1 && this.selected.endIndex[1] === -1){
-						if(i1 <= this.selected.startIndex[0] && i2 <= this.selected.startIndex[1]){
+						if(i1 < this.selected.startIndex[0] || ( i1 === this.selected.startIndex[0] && i2 <= this.selected.startIndex[1]) ){
 							this.setEnd(...this.selected.startIndex);
 							this.setStart(i1, i2);
+							this.setContinuous([i1, i2], this.selected.endIndex);
 
 							return;
 						}
 
 						this.setEnd(i1, i2);
+						this.setContinuous(this.selected.startIndex, this.selected.endIndex);
+
 					}else{
 						this.clearContinuous(this.selected.startIndex, this.selected.endIndex);
 
@@ -328,6 +334,9 @@ export default {
 
 			this.months.unshift(a);
 			this.render.unshift(this.getRenderMonth(...a));
+
+			this.selected.startIndex[0]++;
+			this.selected.endIndex[0]++;
 		},
 		addNextMonth () {
 			let y = this.months[this.months.length - 1][0];
@@ -343,6 +352,9 @@ export default {
 
 			this.months.push(a);
 			this.render.push(this.getRenderMonth(...a));
+
+			this.selected.startIndex[0]--;
+			this.selected.endIndex[0]--;
 		}
 	},
 
@@ -350,22 +362,6 @@ export default {
 		this.parsePropStartEnd();
 
 		this.initRender();
-
-		// deep watch
-		this.$watch("selected", function(val){
-			let start = val.startIndex;
-			let end = val.endIndex;
-
-			if(start[0] !== -1
-				&& start[1] !== -1
-				&& end[0] !== -1
-				&& end[1] !== -1
-			){
-				this.setContinuous(start, end);
-			}
-		}, {
-			deep: true
-		});
 	}
 }
 </script>

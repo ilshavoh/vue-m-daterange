@@ -1,6 +1,15 @@
-# daterange
+# vue-m-daterange
 
-> A Vue.js project
+A Vue.js component.
+1. Render calendar.
+2. Selection logic.
+3. Mobile Layout.
+
+compatibility: vw flex
+
+## Dist online
+[click me](https://ilshavoh.github.io/vue-m-daterange/).
+Mobile layout, if u use desktop browser, switch it with dev-tool.
 
 ## Build Setup
 

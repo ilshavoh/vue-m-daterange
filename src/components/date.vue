@@ -16,14 +16,14 @@
 			</div>
 
 			<div class="date-calendar-body">
-				<p @click="addLastMonth">上一月</p>
+				<p @click="addLastMonth" class="btn-month">上一月</p>
 				<div v-for="(item, i1) in render">
 					<p class="name">{{ item.name }}</p>
 					<div class="data">
 						<p v-for="(item, i2) in item.data" :class="[ item.status ]" @click="click(item, i1, i2)">{{ item.date }}</p>
 					</div>
 				</div>
-				<p @click="addNextMonth">下一月</p>
+				<p @click="addNextMonth" class="btn-month">下一月</p>
 			</div>
 
 		</div>
@@ -489,6 +489,13 @@ export default {
 						color: #f6f6f6;
 					}
 				}
+			}
+
+			.btn-month{
+				padding: 1rem 0;
+
+				color: #999;
+				text-align: center;
 			}
 		}
 	}

@@ -378,13 +378,8 @@ export default {
 	width: 100%;
 
 	background-color: #f6f6f6;
-	overflow-y: auto;
 
 	&-head{
-		position: fixed;
-		top: 0;
-		left: 0;
-
 		width: 100%;
 		height: 5rem;
 
@@ -413,10 +408,6 @@ export default {
 	&-calendar{
 
 		&-head{
-			position: fixed;
-			top: 5rem;
-			left: 0;
-
 			display: flex;
 			justify-content: space-around;
 
@@ -439,7 +430,9 @@ export default {
 		}
 
 		&-body{
-			margin: 10rem 0 2rem;
+			// fix less calc and css3 calc
+			height: calc(~"100vh - 10rem");
+			overflow-y: auto;
 
 			.name{
 				margin: 3rem 0 0 3%;

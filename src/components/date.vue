@@ -352,9 +352,6 @@ export default {
 
 			this.months.push(a);
 			this.render.push(this.getRenderMonth(...a));
-
-			this.selected.startIndex[0]--;
-			this.selected.endIndex[0]--;
 		}
 	},
 
